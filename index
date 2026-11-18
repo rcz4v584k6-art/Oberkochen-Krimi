@@ -1,1 +1,176 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101416">
+  <meta name="description" content="AKTE 017 — Terminal zur Wiederherstellung einer geschwärzten Signatur.">
+  <title>AKTE 017 · Signaturprüfung</title>
+  <style>
+    :root{color-scheme:dark;--bg:#101416;--panel:#171d20;--ink:#f3f0e7;--muted:#a5aeae;--line:#343d40;--red:#d77469;--green:#b7e5c7;--accent:var(--red);font-family:Arial,Helvetica,sans-serif}
+    *{box-sizing:border-box}body{margin:0;min-height:100svh;background:var(--bg);color:var(--ink);background-image:radial-gradient(ellipse at 75% 48%,#26312c55,transparent 55%),linear-gradient(#ffffff02 1px,transparent 1px);background-size:auto,100% 5px}
+    button{font:inherit}button:focus-visible{outline:3px solid var(--ink);outline-offset:7px}::selection{background:#d7746955}
+    .shell{max-width:1160px;margin:auto;padding:34px 42px 22px;min-height:100svh;display:flex;flex-direction:column}
+    .masthead{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:25px;gap:18px}
+    .brand{display:flex;align-items:center;gap:14px}.number{font-size:36px;font-weight:800;line-height:1;letter-spacing:-2px}.brand-copy{font:13px/1.6 ui-monospace,Consolas,monospace;letter-spacing:2px;text-transform:uppercase;border-left:1px solid var(--line);padding-left:14px}
+    .reference{font:13px/1.6 ui-monospace,Consolas,monospace;color:var(--muted);text-align:right}.reference strong{font-weight:400;color:var(--ink)}
+    main{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:65px;align-items:center;padding:58px 0}
+    .eyebrow{color:var(--red);font:13px/1.6 ui-monospace,Consolas,monospace;letter-spacing:2px;text-transform:uppercase;margin:0 0 23px;display:flex;gap:10px;align-items:center}.eyebrow:before{content:"";width:23px;height:2px;background:currentColor}
+    h1{font-size:clamp(40px,5.1vw,64px);letter-spacing:-2.8px;line-height:1.04;margin:0 0 28px;font-weight:800;text-transform:uppercase}
+    .description{max-width:380px;font-size:17px;line-height:1.7;color:var(--muted);margin:0 0 32px}
+    .redaction{display:inline-block;background:var(--ink);color:var(--ink);height:.8em;vertical-align:baseline;width:102px;transform:rotate(-1deg);margin:0 3px;user-select:none;aria-hidden:true}
+    .evidence{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:16px 0;max-width:380px;display:flex;justify-content:space-between;font:13px/1.5 ui-monospace,Consolas,monospace;color:var(--muted);gap:16px}.evidence strong{color:var(--ink);font-weight:400}
+    .terminal{background:linear-gradient(135deg,#202729,#151b1d 65%);border:1px solid #3c474a;box-shadow:0 24px 90px #0004;position:relative;min-height:478px;display:flex;flex-direction:column;align-items:center;padding:23px 28px 26px;border-radius:3px}
+    .terminal:before,.terminal:after{content:"+";font:14px ui-monospace,monospace;color:#687678;position:absolute;top:10px}.terminal:before{left:10px}.terminal:after{right:10px}
+    .terminal-top{display:flex;justify-content:space-between;width:100%;font:12px/1.5 ui-monospace,Consolas,monospace;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:15px;margin-bottom:24px;gap:10px}
+    .terminal-state{color:var(--accent)}.scanner{border:0;background:transparent;color:var(--accent);width:220px;height:220px;padding:18px;display:grid;place-items:center;position:relative;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;border-radius:50%;-webkit-tap-highlight-color:transparent;flex-shrink:0}
+    .scanner:before{content:"";position:absolute;inset:17px;border:1px solid #53605b;border-radius:50%;background:radial-gradient(circle,#d774690c,transparent 70%)}
+    .scanner:after{content:"";position:absolute;inset:0;border:1px dashed #495552;border-radius:50%}.scanner:hover:before{border-color:var(--accent)}
+    .fingerprint{width:137px;height:167px;z-index:1;filter:drop-shadow(0 0 12px #d7746920);opacity:.9;overflow:visible}
+    .progress-ring{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;stroke-dasharray:664;stroke-dashoffset:664;pointer-events:none;z-index:2}
+    .sweep{position:absolute;z-index:3;left:31px;right:31px;height:2px;background:var(--accent);box-shadow:0 0 18px 3px #d7746933;top:40px;opacity:0;pointer-events:none}
+    .scanning .sweep{opacity:.8;animation:sweep 1.4s ease-in-out infinite alternate}.scanning .fingerprint{filter:drop-shadow(0 0 14px #d7746955)}
+    .instruction{font-size:16px;line-height:1.5;text-align:center;margin:20px 0 8px;max-width:310px;min-height:48px}.statusline{font:13px/1.6 ui-monospace,Consolas,monospace;color:var(--muted);text-align:center;min-height:23px;margin:0}
+    .track{width:100%;height:3px;background:#34403d;margin:20px 0 0;overflow:hidden}.track span{display:block;height:100%;background:var(--accent);width:0}
+    .meter{display:flex;justify-content:space-between;width:100%;font:12px/1.5 ui-monospace,Consolas,monospace;color:var(--muted);margin-top:10px}
+    .result{width:100%;text-align:center;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 0 0}.result[hidden],.scan-content[hidden]{display:none}
+    .check{width:44px;height:44px;border:1px solid #b7e5c755;color:var(--green);border-radius:50%;display:grid;place-items:center;font-size:24px;margin-bottom:23px}.result-label{font:13px/1.5 ui-monospace,Consolas,monospace;letter-spacing:1.8px;color:var(--green);text-transform:uppercase;margin:0 0 15px}.code{display:block;font:700 clamp(58px,8vw,78px)/1.1 ui-monospace,Consolas,monospace;letter-spacing:9px;margin-left:9px;color:var(--ink)}
+    .result p.explanation{font-size:16px;line-height:1.6;color:var(--muted);max-width:290px;margin:22px 0 24px}.reset{background:none;border:0;border-bottom:1px solid #64736d;color:var(--muted);padding:8px 0;font-size:14px;cursor:pointer;margin-top:10px}.reset:hover{color:var(--ink)}
+    .complete{--accent:var(--green)}.complete .terminal-state{color:var(--green)}
+    .scan-content{display:flex;flex-direction:column;align-items:center;width:100%}
+    footer{border-top:1px solid var(--line);padding-top:18px;display:flex;justify-content:space-between;gap:15px;font:12px/1.7 ui-monospace,Consolas,monospace;color:#99a2a3}.footnote{max-width:570px}footer .stamp{letter-spacing:2px;color:#bbc0b9;white-space:nowrap}
+    noscript{display:block;max-width:450px;margin:20px auto;padding:20px;background:#4b2525;color:white}
+    @keyframes sweep{from{top:42px}to{top:176px}}
+    @media(max-width:760px){.shell{padding:22px 22px max(18px,env(safe-area-inset-bottom))}.masthead{padding-bottom:18px}.number{font-size:30px}.brand-copy{font-size:12px;letter-spacing:1.5px}.reference{font-size:12px}main{grid-template-columns:1fr;gap:30px;padding:30px 0}.eyebrow{margin-bottom:14px;font-size:12px}h1{font-size:41px;letter-spacing:-1.8px;margin-bottom:17px}.description{font-size:16px;margin-bottom:0;max-width:100%;line-height:1.6}.evidence{display:none}.terminal{min-height:431px;padding:20px 22px 21px;max-width:480px;width:100%;margin:auto}.terminal-top{margin-bottom:16px}.scanner{width:190px;height:190px;padding:17px}.fingerprint{width:119px;height:145px}.instruction{margin-top:15px;min-height:46px}.track{margin-top:13px}.sweep{left:27px;right:27px}.scanning .sweep{animation-name:sweep-mobile}footer{flex-direction:column;gap:8px}.result{padding:20px 0}.code{font-size:67px}@keyframes sweep-mobile{from{top:35px}to{top:150px}}}
+    @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}.scanning .sweep{top:50%;opacity:.7}}
+  </style>
+</head>
+<body>
+<div class="shell">
+  <header class="masthead">
+    <div class="brand"><span class="number">017</span><span class="brand-copy">Fallanalyse<br>Digitales Archiv</span></div>
+    <div class="reference"><strong>PROTOKOLL A03-R</strong><br>19.10.2011 · 09:14</div>
+  </header>
+  <main>
+    <section class="intro" aria-labelledby="title">
+      <p class="eyebrow">Geschützter Auditvermerk</p>
+      <h1 id="title">Verborgene<br>Signatur.</h1>
+      <p class="description">Im Revisionsprotokoll wurde Feld T03 überschrieben. Die persönliche Signatur ist <span class="redaction" aria-hidden="true"></span><span class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)">geschwärzt</span>.<br>Stelle den verdeckten Eintrag wieder her.</p>
+      <div class="evidence"><span>REFERENZ <strong>A03 / T03</strong></span><span>STATUS <strong>VERSCHLÜSSELT</strong></span></div>
+    </section>
+    <section class="terminal" aria-label="Signatur-Scanner">
+      <div class="terminal-top"><span>SIGNATURTERMINAL</span><span class="terminal-state" id="state">GESPERRT</span></div>
+      <div class="scan-content" id="scan-content">
+        <button class="scanner" id="scanner" type="button" aria-label="Scanner: Finger vier Sekunden gedrückt halten. Mit Tastatur Leertaste oder Eingabetaste halten." aria-describedby="instruction">
+          <svg class="progress-ring" viewBox="0 0 220 220" aria-hidden="true"><circle id="ring" cx="110" cy="110" r="105.7"/></svg>
+          <svg class="fingerprint" viewBox="0 0 140 170" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+            <path d="M15 65C16 31 38 10 69 10s55 24 56 57M7 82V67C7 29 34 2 69 2s64 28 64 67v23"/>
+            <path d="M22 98V68c0-28 19-48 47-48s47 21 47 48v37M31 113V69c0-22 16-40 38-40s38 18 38 40v44M40 125V70c0-18 12-31 29-31s29 13 29 31v54"/>
+            <path d="M49 135V71c0-13 8-23 20-23s20 10 20 23v67M58 144V72c0-8 4-15 11-15s11 7 11 15v79M69 69v89M15 104v13c0 9-2 15-5 20M23 118c0 12-3 25-8 31M32 129c-1 12-5 23-10 30M41 139c-1 10-4 18-8 25M50 149l-4 17M98 136v14M107 125v18M116 117v15M125 105v13M133 102v6"/>
+          </svg>
+          <span class="sweep" aria-hidden="true"></span>
+        </button>
+        <p class="instruction" id="instruction">Finger auflegen und<br><strong>4 Sekunden halten.</strong></p>
+        <p class="statusline" id="status" role="status" aria-live="polite">Bereit für die Wiederherstellung.</p>
+        <div class="track" role="progressbar" id="progress" aria-label="Wiederherstellung" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="fill"></span></div>
+        <div class="meter" aria-hidden="true"><span id="stage">WARTE AUF KONTAKT</span><span id="percent">00 %</span></div>
+      </div>
+      <div class="result" id="result" hidden aria-labelledby="result-label">
+        <span class="check" aria-hidden="true">✓</span>
+        <p class="result-label" id="result-label">Signatur wiederhergestellt</p>
+        <output class="code" id="code" aria-label="Freigegebene Signatur" tabindex="-1"></output>
+        <p class="explanation">Notiere die Kennung und gleiche sie mit dem Signaturregister in deiner Akte ab.</p>
+        <button class="reset" id="reset" type="button">Scanner zurücksetzen</button>
+      </div>
+    </section>
+  </main>
+  <footer><span class="footnote">Interaktive Spielrequisite. Der Scanner reagiert auf Berührung; es werden keine Fingerabdruckdaten erfasst oder gespeichert.</span><span class="stamp">AKTE 017 / A03</span></footer>
+</div>
+<noscript>Bitte aktiviere JavaScript, um den Scanner zu verwenden. Die Spielleitung kann den verdeckten Eintrag auch ohne Smartphone freigeben.</noscript>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const scanner = $('scanner');
+  const duration = 4000;
+  const circumference = 2 * Math.PI * 105.7;
+  let phase = 'idle', startedAt = 0, frame = 0, activePointer = null, activeKey = null, lastStage = -1;
+  $('ring').style.strokeDasharray = String(circumference);
+  $('ring').style.strokeDashoffset = String(circumference);
+  function vibrate(pattern) { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (_) {} }
+  function setProgress(fraction) {
+    const value = Math.min(100, Math.floor(fraction * 100));
+    $('fill').style.width = value + '%';
+    $('ring').style.strokeDashoffset = String(circumference * (1 - fraction));
+    $('percent').textContent = String(value).padStart(2, '0') + ' %';
+    if (value % 10 === 0 || value === 100) $('progress').setAttribute('aria-valuenow', String(value));
+  }
+  function begin() {
+    if (phase !== 'idle') return;
+    phase = 'scanning'; startedAt = performance.now(); lastStage = -1;
+    document.body.classList.add('scanning'); $('state').textContent = 'PRÜFUNG LÄUFT';
+    vibrate(18); frame = requestAnimationFrame(tick);
+  }
+  function tick(now) {
+    if (phase !== 'scanning') return;
+    const fraction = Math.min(1, Math.max(0, (now - startedAt) / duration));
+    setProgress(fraction);
+    const stage = fraction < .28 ? 0 : fraction < .64 ? 1 : 2;
+    if (stage !== lastStage) {
+      lastStage = stage;
+      const messages = ['Kontakt erkannt. Weiter gedrückt halten.', 'Auditblock wird wiederhergestellt.', 'Verdeckte Kennung wird entschlüsselt.'];
+      const labels = ['KONTAKT ERKANNT', 'AUDITBLOCK LESEN', 'KENNUNG ENTSCHLÜSSELN'];
+      $('status').textContent = messages[stage]; $('stage').textContent = labels[stage];
+    }
+    if (fraction === 1) { complete(); return; }
+    frame = requestAnimationFrame(tick);
+  }
+  function complete() {
+    phase = 'complete'; activePointer = null; activeKey = null;
+    document.body.classList.remove('scanning'); document.body.classList.add('complete');
+    $('state').textContent = 'FREIGEGEBEN'; $('scan-content').hidden = true;
+    $('code').textContent = String.fromCharCode(54, 69, 57, 49);
+    $('result').hidden = false; $('code').focus({preventScroll:true}); vibrate([28, 70, 45]);
+  }
+  function cancel(message = 'Zu früh losgelassen. Bitte erneut 4 Sekunden halten.') {
+    activePointer = null; activeKey = null;
+    if (phase !== 'scanning') return;
+    cancelAnimationFrame(frame); phase = 'idle'; document.body.classList.remove('scanning');
+    $('state').textContent = 'GESPERRT'; $('status').textContent = message; $('stage').textContent = 'WARTE AUF KONTAKT'; setProgress(0);
+  }
+  scanner.addEventListener('pointerdown', event => {
+    if (!event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0) || phase !== 'idle') return;
+    event.preventDefault(); activePointer = event.pointerId;
+    try { scanner.setPointerCapture(event.pointerId); } catch (_) {}
+    begin();
+  });
+  scanner.addEventListener('pointermove', event => {
+    if (event.pointerId !== activePointer || phase !== 'scanning') return;
+    const r = scanner.getBoundingClientRect();
+    if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) cancel();
+  });
+  window.addEventListener('pointerup', event => { if (event.pointerId === activePointer) cancel(); });
+  scanner.addEventListener('pointercancel', event => { if (event.pointerId === activePointer) cancel(); });
+  scanner.addEventListener('lostpointercapture', event => { if (event.pointerId === activePointer) cancel(); });
+  scanner.addEventListener('contextmenu', event => event.preventDefault());
+  scanner.addEventListener('keydown', event => {
+    if (![' ', 'Enter'].includes(event.key)) return;
+    event.preventDefault();
+    if (!event.repeat && phase === 'idle') { activeKey = event.key; begin(); }
+  });
+  window.addEventListener('keyup', event => { if (event.key === activeKey) { event.preventDefault(); cancel(); } });
+  window.addEventListener('blur', () => cancel('Prüfung unterbrochen. Bitte erneut starten.'));
+  scanner.addEventListener('blur', () => { if (activeKey !== null) cancel(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) cancel('Prüfung unterbrochen. Bitte erneut starten.'); });
+  $('reset').addEventListener('click', () => {
+    cancelAnimationFrame(frame); phase = 'idle'; activePointer = null; activeKey = null;
+    document.body.classList.remove('complete', 'scanning');
+    $('result').hidden = true; $('code').textContent = ''; $('scan-content').hidden = false;
+    $('state').textContent = 'GESPERRT'; $('status').textContent = 'Bereit für die Wiederherstellung.';
+    $('stage').textContent = 'WARTE AUF KONTAKT'; setProgress(0); scanner.focus({preventScroll:true});
+  });
+})();
+</script>
+</body>
+</html>
 
